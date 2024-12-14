@@ -268,7 +268,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # URL of the Hebrew Wikipedia page
-url = "https://he.wikipedia.org/wiki/%D7%97%D7%99%D7%9C_%D7%94%D7%90%D7%95%D7%95%D7%99%D7%A8_%D7%94%D7%99%D7%A9%D7%A8%D7%90%D7%9C%D7%99"
+url = "https://en.wikipedia.org/wiki/Israeli_Air_Force"
 
 def scrape_text_from_url(url):
     """Scrape and return the text content from the given URL."""
