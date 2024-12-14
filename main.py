@@ -238,57 +238,156 @@ else:
     print("No such message found.")
 
 # %%
-#q9
-from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer, PorterStemmer
+import spacy
 
-# Initialize stemmer
+# Download required resources
+nltk.download('punkt')
+nltk.download('wordnet')
+
+# Initialize tools
+nltk_lemmatizer = WordNetLemmatizer()
 porter_stemmer = PorterStemmer()
+spacy_nlp = spacy.load("en_core_web_sm")
 
-# Function to stem tokens
+# Tokenization Function
+def tokenize_messages(messages, method="NLTK"):
+    if method == "NLTK":
+        return messages.apply(word_tokenize)
+    elif method == "spaCy":
+        return messages.apply(lambda x: [token.text for token in spacy_nlp(x)])
+    else:
+        raise ValueError("Invalid method. Choose 'NLTK' or 'spaCy'.")
+
+# Lemmatization Function
+def lemmatize_tokens(token_vectors, method="NLTK"):
+    if method == "NLTK":
+        return token_vectors.apply(lambda tokens: [nltk_lemmatizer.lemmatize(token) for token in tokens])
+    elif method == "spaCy":
+        return token_vectors.apply(lambda tokens: [spacy_nlp(token)[0].lemma_ for token in tokens])
+    else:
+        raise ValueError("Invalid method. Choose 'NLTK' or 'spaCy'.")
+
+# Stemming Function
 def stem_tokens(token_vectors, method="NLTK"):
     if method == "NLTK":
         return token_vectors.apply(lambda tokens: [porter_stemmer.stem(token) for token in tokens])
     else:
-        raise ValueError("Invalid method. Only 'NLTK' is supported for stemming.")
+        raise ValueError("Stemming is only supported for 'NLTK'.")
 
-# Generate combined vector of all tokens
+# Generate Combined Vector
 def generate_combined_vector(messages, method="NLTK"):
     token_vectors = tokenize_messages(messages, method)
     return [token for message_tokens in token_vectors for token in message_tokens]
 
-# Find the first message that does not change the stemmed vector
-def find_first_removal_message_stemmed(messages, method="NLTK"):
+# Unified Function to Find First Message
+def find_first_removal_message(messages, method="NLTK", process="lemmatize"):
+    print(f"Processing with method: '{method}' and process: '{process}'")
     combined_vector = generate_combined_vector(messages, method)
-    combined_stemmed = set(stem_tokens(pd.Series([combined_vector]), method)[0])
+    
+    if process == "lemmatize":
+        combined_processed = set(lemmatize_tokens(pd.Series([combined_vector]), method)[0])
+    elif process == "stem":
+        if method == "spaCy":
+            raise ValueError("Stemming is not supported with spaCy.")
+        combined_processed = set(stem_tokens(pd.Series([combined_vector]), method)[0])
+    else:
+        raise ValueError("Invalid process. Choose 'lemmatize' or 'stem'.")
     
     for index, message in messages.items():
         temp_messages = messages.drop(index)
         temp_vector = generate_combined_vector(temp_messages, method)
-        temp_stemmed = set(stem_tokens(pd.Series([temp_vector]), method)[0])
         
-        if len(temp_stemmed) == len(combined_stemmed):
+        if process == "lemmatize":
+            temp_processed = set(lemmatize_tokens(pd.Series([temp_vector]), method)[0])
+        elif process == "stem":
+            temp_processed = set(stem_tokens(pd.Series([temp_vector]), method)[0])
+        
+        if temp_processed == combined_processed:
             # Proof: Return relevant details
             return {
+                "method": method,
+                "process": process,
                 "index": index,
                 "message": message,
-                "original_stemmed": combined_stemmed,
-                "modified_stemmed": temp_stemmed,
-                "proof": "The stemmed vectors are identical, so removing this message does not affect stemmed tokens."
+                "original_processed": combined_processed,
+                "modified_processed": temp_processed,
+                "proof": f"The {process}ed vectors are identical, so removing this message does not affect the results."
             }
     return None
 
-# Example usage
+# Q8 ##################
 messages = data["message"]  # Replace with your dataset column
-method = "spaCy"  # Stemming is only supported by NLTK
-result = find_first_removal_message_stemmed(messages, method)
+
+# Choose method ('NLTK' or 'spaCy') and process ('lemmatize' or 'stem')
+method = "NLTK"  # Can also be "spaCy"
+process = "lemmatize"  # Use "stem" for stemming
+
+result = find_first_removal_message(messages, method, process)
 if result:
-    print(f"for {method}:")
+    print(f"\nResults with method: '{result['method']}' and process: '{result['process']}':")
     print(f"Message index: {result['index']}")
     print(f"Message: {result['message']}")
-    print(f"Original stemmed vector: {result['original_stemmed']}")
-    print(f"Modified stemmed vector: {result['modified_stemmed']}")
+    print(f"Original processed vector: {result['original_processed']}")
+    print(f"Modified processed vector: {result['modified_processed']}")
     print(f"Proof: {result['proof']}")
 else:
-    print("No such message found.")
+    print(f"\nNo such message found using method: '{method}' and process: '{process}'.")
+
+# %%
+#Q9#############
+messages = data["message"]  # Replace with your dataset column
+
+# Choose method ('NLTK' or 'spaCy') and process ('lemmatize' or 'stem')
+method = "NLTK"  # Can also be "spaCy"
+process = "stem"  # Use "stem" for stemming
+
+result = find_first_removal_message(messages, method, process)
+if result:
+    print(f"\nResults with method: '{result['method']}' and process: '{result['process']}':")
+    print(f"Message index: {result['index']}")
+    print(f"Message: {result['message']}")
+    print(f"Original processed vector: {result['original_processed']}")
+    print(f"Modified processed vector: {result['modified_processed']}")
+    print(f"Proof: {result['proof']}")
+else:
+    print(f"\nNo such message found using method: '{method}' and process: '{process}'.")
+
+# %%
+#Q10#############
+messages = data["message"]  # Replace with your dataset column
+
+# Choose method ('NLTK' or 'spaCy') and process ('lemmatize' or 'stem')
+method = "NLTK"  # Can also be "spaCy"
+process = "lemmatize"  # Use "stem" for stemming
+
+result = find_first_removal_message(messages, method, process)
+if result:
+    print(f"\nResults with method: '{result['method']}' and process: '{result['process']}':")
+    print(f"Message index: {result['index']}")
+    print(f"Message: {result['message']}")
+    print(f"Original processed vector: {result['original_processed']}")
+    print(f"Modified processed vector: {result['modified_processed']}")
+    print(f"Proof: {result['proof']}")
+else:
+    print(f"\nNo such message found using method: '{method}' and process: '{process}'.")
+
+
+
+# Choose method ('NLTK' or 'spaCy') and process ('lemmatize' or 'stem')
+method = "spaCy"  # Can also be "spaCy"
+process = "lemmatize"  # Use "stem" for stemming
+
+result = find_first_removal_message(messages, method, process)
+if result:
+    print(f"\nResults with method: '{result['method']}' and process: '{result['process']}':")
+    print(f"Message index: {result['index']}")
+    print(f"Message: {result['message']}")
+    print(f"Original processed vector: {result['original_processed']}")
+    print(f"Modified processed vector: {result['modified_processed']}")
+    print(f"Proof: {result['proof']}")
+else:
+    print(f"\nNo such message found using method: '{method}' and process: '{process}'.")
 
 # %%
